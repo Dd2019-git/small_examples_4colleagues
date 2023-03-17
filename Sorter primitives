@@ -1,0 +1,116 @@
+#sorter examples for Grokking Algorithms
+# part 1 create unsorted array
+
+function DoArray{
+param([int]$F_CountOfElements)
+    # $F_CountOfElements = 10*1000*1000
+    #$F_CountOfElements = 2*100*1000
+    $F_UnsortedArr = New-Object int[] $F_CountOfElements
+    
+    for ($F_SingleElNum = 0; $F_SingleElNum -lt $F_UnsortedArr.Length; $F_SingleElNum++){
+    $F_UnsortedArr[$F_SingleElNum] = Get-Random -Maximum $F_CountOfElements
+    # Write-Host $F_SingleElNum
+    }
+    return $F_UnsortedArr
+}
+
+$CountOfElements = 15*100
+Write-Host "Wait near 20 seconds for 200k / 400k elements"
+Write-Host "Wait near 40 seconds for 600k elements"
+Write-Host "Wait near 50-60 seconds for 1M elements"
+Write-Host "Current size " $CountOfElements
+# Measure-Command {$UnsortedArr01 = DoArray $CountOfElements}
+# Export-Clixml -path 'C:\Scripts\tmpscrdata\sorting_export01_small1.xml' -InputObject $UnsortedArr01
+# Write-Host "12 " $UnsortedArr01.Length
+# Remove-Variable UnsortedArr01
+
+$UnsortedArr01 = Import-Clixml -path 'C:\Scripts\tmpscrdata\sorting_export01_small1.xml'
+$UnsortedArr02 = Import-Clixml -path 'C:\Scripts\tmpscrdata\sorting_export01_small1.xml'
+$UnsortedArr03 = Import-Clixml -path 'C:\Scripts\tmpscrdata\sorting_export01_small1.xml'
+$UnsortedArr04 = Import-Clixml -path 'C:\Scripts\tmpscrdata\sorting_export01_small1.xml'
+$UnsortedArr05 = Import-Clixml -path 'C:\Scripts\tmpscrdata\sorting_export01_small1.xml'
+
+# https://devblogs.microsoft.com/scripting/powertip-sort-an-array-of-numbers-with-powershell/
+# https://stackoverflow.com/questions/63365196/powershell-sort-object-with-number
+# Measure-Command {$Sortv1 = Sort-Object $UnsortedArr02} так мы видите ли Sort-Object : Cannot convert System.Int32 to one of the following types {System.String, System.Management.Automation.ScriptBlock}.
+
+Write-Host "Sort v0 integrated"
+Measure-Command {$Sort_v0 = $UnsortedArr01 | sort -Descending}  #работает за 13-15 секунд для 1М
+
+Write-Host "Sort v1 Classic bubble sort - 12 sec \ 1500"
+# Проблема. Даже для 50.000 массива - один проход занимает 56 секунд. 
+# Для значений 1500 для пузырька ок, 14 секунд
+
+
+$MaxSort = $UnsortedArr01.Count-1
+Measure-Command {
+for ($LowA = 0 ; $LowA -lt $MaxSort; $LowA++){
+    for ($Cow = 0; $Cow -lt $MaxSort; $Cow++){
+        if ($UnsortedArr01[$Cow] -lt $UnsortedArr01[$Cow+1]) {
+            $Tempo1 = $UnsortedArr01[$Cow+1]
+            $UnsortedArr01[$Cow+1] = $UnsortedArr01[$Cow]
+            $UnsortedArr01[$Cow] = $Tempo1
+
+    }}
+    }}
+
+
+
+
+Write-Host "Sort v2 Classic bubble sort with second counter - 9 sec \ 1500"
+Measure-Command {
+for ($LowA = 0 ; $LowA -lt $MaxSort; $LowA++){
+    $Intsort = $MaxSort - $LowA
+    for ($Cow = 0; $Cow -lt $Intsort; $Cow++){
+        if ($UnsortedArr02[$Cow] -lt $UnsortedArr02[$Cow+1]) {
+            $Tempo1 = $UnsortedArr02[$Cow+1]
+            $UnsortedArr02[$Cow+1] = $UnsortedArr02[$Cow]
+            $UnsortedArr02[$Cow] = $Tempo1
+
+    }}
+    }}
+
+Write-Host "Sort v3 bubble sort with flag - 10 sec"
+
+
+Measure-Command {
+for ($LowA = 0 ; $LowA -lt $MaxSort; $LowA++){
+    $Flag = 0
+    $Intsort = $MaxSort - $LowA
+    for ($Cow = 0; $Cow -lt $Intsort; $Cow++){
+        if ($UnsortedArr03[$Cow] -lt $UnsortedArr03[$Cow+1]) {
+            $Tempo1 = $UnsortedArr03[$Cow+1]
+            $UnsortedArr03[$Cow+1] = $UnsortedArr03[$Cow]
+            $UnsortedArr03[$Cow] = $Tempo1
+            $Flag = 1}}
+         #Flag usage
+         if ($Flag = 0) {break}       }}
+
+Write-Host "Sort v4 Selection sort - 5 sec \ 1500"
+
+# $Sort_v4 =  New-Object int[] $CountOfElements
+# $MaxSort = $UnsortedArr04.Count-1
+$UnsortedArr04[0..5]
+Measure-Command {
+$CountOfChange = 0
+for ($LowA = 0 ; $LowA -lt ($UnsortedArr04.Count-1); $LowA++) {
+    $MinIndex = $LowA
+
+    for ($Cow = ($LowA + 1); $Cow -lt $UnsortedArr04.Count ; $Cow++) {
+        if ($UnsortedArr04[$Cow] -lt $UnsortedArr04[$MinIndex]) { 
+            $MinIndex = $Cow}  ##отсюда мы должны получить MinIndex после каждого прогона.
+    }
+    Write-Host "Internal done, min index - "  $MinIndex  " - " $UnsortedArr04[$MinIndex]
+
+
+               
+    if ($MinIndex -ne $LowA) 
+        {
+        $Temp4 = $UnsortedArr04[$LowA]  ; $UnsortedArr04[$LowA] = $UnsortedArr04[$MinIndex]; $UnsortedArr04[$MinIndex] = $Temp4 ; $CountOfChange ++; Remove-Variable Temp4}
+     if ($LowA % 10 -eq 0) {Write-Host $LowA} 
+     
+    
+} # for 1  end
+} # timer end
+$CountOfChange
+$UnsortedArr04[0..5]
