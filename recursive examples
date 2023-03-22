@@ -1,0 +1,87 @@
+#recursive examples
+function DoMinus1 {
+param([int]$F_Inp01)
+Write-Host $F_Inp01
+Start-Sleep 1
+DoMinus ($F_Inp01-1)
+}
+
+#DoMinus1 5
+
+#recursive examples
+function DoMinus2 {
+param([int]$F_Inp02)
+Write-Host $F_Inp02
+Start-Sleep -Milliseconds 500 
+    if (($F_Inp02 -1) -le 0) {break}
+    else {DoMinus2 ($F_Inp02-1)}
+}
+
+# DoMinus2 5
+
+function DoFactorial3{
+param([int]$F_Inp03)
+# Write-Host $F_Inp03
+    if ($F_Inp03 -eq 1){return 1}
+    else {$F_Inp03 = ($F_Inp03 * (DoFactorial3 ($F_Inp03 - 1)))
+    } 
+    return $F_Inp03
+    
+}
+# DoFactorial3 10
+
+Function DoArraySum4{
+param($F_Inp04)
+$F_Sum4 = 0
+foreach ($F_elm in $F_Inp04){ $F_Sum4 = $F_Sum4+$F_elm}
+return $F_Sum4
+
+}
+$InputArr01 = @(1,2,5,25, 10,15)
+$InputArr02 = @(102)
+$InputArr03 = @(103, 105)
+$InputArr04 = @(103, 105, 102)
+$InputArr05 = @(104, 105, 110, 125, 100, 145, 90)
+# write-host '* ' $InputArr01.Count
+# write-host '** ' $InputArr01[1..($InputArr01.Count-1)]  #man https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_arrays?view=powershell-7.3
+# DoArraySum4 $InputArr01
+# DoArraySum4 $InputArr02
+
+# немного логики. Функция получает на вход массив из чисел и возвращает число. 
+Function DoArraySum5Rec{
+param($F_Inp05)
+[int]$F_Out05 = 0
+if ($F_Inp05.count -eq 1) {return $F_Inp05[0]}
+    else {
+    $F_Size = $F_Inp05.count-1
+    $TmpArr = $F_Inp05[1..$F_Size]
+    $F_Out05 = $F_Out05 + $F_Inp05[0] + (DoArraySum5Rec $TmpArr) #для читаемости, можно и в одну строку. 
+
+     }
+    # Write-Host '*** ' $F_Out05
+return $F_Out05
+}
+
+# DoArraySum5Rec $InputArr01
+# DoArraySum5Rec $InputArr02
+# DoArraySum5Rec $InputArr03
+
+#Recursive search - принимает массив, возвращает число. Сравниваем число и потом по ситуации
+
+Function DoArraySearchMax6Rec{
+param($F_Inp06)
+[int]$F_Out06 = $F_Inp06[0]
+    if ($F_Inp06.count -eq 1) {return $F_Inp06[0]}
+    else {
+    $F_Size = $F_Inp06.count-1
+    $F_TmpArr = $F_Inp06[1..$F_Size]
+    $ReturnB = (DoArraySearchMax6Rec $F_TmpArr)
+        if ($F_Out06 -lt  $ReturnB ) {$F_Out06 = $ReturnB}
+
+    }
+    return $F_Out06
+}
+# DoArraySearchMax6Rec $InputArr01
+# DoArraySearchMax6Rec $InputArr02
+# DoArraySearchMax6Rec $InputArr03
+# DoArraySearchMax6Rec $InputArr04
