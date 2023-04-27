@@ -1,0 +1,137 @@
+<# перевод статистики по vsan из Atto в более менее читаемый вид Excel
+01 - был просто пример работы
+02 - сразу с массивом. , но с 1 каталогом по очереди
+03 - сразу с пачкой статистики. 
+
+#>
+
+Class Datastat01 # https://devblogs.microsoft.com/scripting/powershell-5-create-simple-class/
+{
+[String]$VM
+[String]$Disk
+[int]$wr_iops4k
+[int]$ro_iops4k
+[int]$wr_flow128k
+[int]$ro_flow128k
+}
+
+
+
+$FilesSrc01 = "C:\03 scripts\data00a"
+# generate dir list
+$DirList001 = Get-ChildItem -Path $FilesSrc01  -Recurse -Directory
+$DirList001 | ForEach-Object {$_.Fullname}
+
+$Export01CsvPath01 = $FilesSrc01
+$Export01CsvFile01 = $FilesSrcvm01 -replace ($FilesSrc01,"") -replace("\\","_") -replace(":","") -replace(" ","") 
+$Export01CsvFile01 = $Export01CsvPath01 + "\" + $Export01CsvFile01 + "_globalv03.csv"
+Write-host "export CSV into " $Export01CsvFile01
+
+# добавка из v003 
+
+
+
+
+foreach ($FilesSrcvm01 in $DirList001) {
+$Export01 = $null
+$Export01 = @()
+
+
+
+$Files01 = (Get-ChildItem -Path $FilesSrcvm01.Fullname | Where  {$_.Name -like "*bmk" })
+
+foreach ($SingleDiskFile in $Files01) {
+
+    # Remove-Variable $DataFromFile01 -ErrorAction SilentlyContinue
+    $DataFromFile01 = New-Object Datastat01 # что ему не нравится то.
+    # $DataFromFile = [Datastat01]::new()
+
+    $Content01 = Get-Content $SingleDiskFile.FullName
+    # тут была попытка сделать покрасивее через xml, но не вышло, так что пусть в этой песне все остается как было. 
+    # Content01 представляет из себя файл xml, разбитый по строкам. Нам нужно два счетчика - 4096 и 131072 в iosize
+    
+    # get drive name 
+    Write-Host $SingleDiskFile.FullName
+    [xml]$Content02XML = Get-Content $SingleDiskFile.FullName  # man https://adamtheautomator.com/powershell-parse-xml/
+    # Select-Xml -Xml $Content02 -XPath '/benchmark/drive'
+    # $Drive = ($Content02XML.benchmark.drive -replace (":",""))
+    $DataFromFile01.Disk = $null
+    $DataFromFile01.Disk = ($Content02XML.benchmark.drive -replace (":","")) #Получили имя диска
+    $DataFromFile01.VM = $null    
+    $DataFromFile01.VM =  $FilesSrcvm01  # имя виртуалки
+
+        for ($CountIn = 0; $CountIn -lt $Content01.Count; $CountIn++) {
+
+            if  ($Content01[$CountIn] -eq "    <rate>") {   #можно конечно сначала сделать trim или replace
+                if  ($Content01[$CountIn+1] -like "*4096*"){ 
+
+                    Write-Host $DataFromFile01.Disk
+                    Write-Host "Write IOPS 4k" $Content01[$CountIn+3] # view as: <writeiops>22000</writeiops>
+                    $Writeiops = $null
+                    $Writeiops = ($Content01[$CountIn+3] -replace ("<writeiops>","") -replace ("</writeiops>","") -replace '\s','').Trim()
+                    Write-Host $Writeiops
+                    $DataFromFile01.wr_iops4k = ($Writeiops -as [int])
+
+                    Write-Host "Read IOPS 4k" $Content01[$CountIn+5] # view as:  <readiops>45386</readiops>
+                    $Readiops = $null
+                    $Readiops = ($Content01[$CountIn+5] -replace ("<readiops>","") -replace ("</readiops>","") -replace '\s','').Trim()
+                    Write-Host $Readiops
+                    $DataFromFile01.ro_iops4k = ($Readiops -as [int])
+                    $Export01 += $DataFromFile01
+                    Write-Host 
+                    }
+                if  ($Content01[$CountIn+1] -like "*131072*"){
+                     Write-Host "Write bps 128k" $Content01[$CountIn+3] # view as:<writebps>209373697</writebps>
+                     $Write128kflow = $null
+                     $Write128kflow = ($Content01[$CountIn+2] -replace ("<writebps>","") -replace ("</writebps>","") -replace '\s','').Trim()
+                     Write-Host $Write128kflow
+                     $DataFromFile01.wr_flow128k = $Write128kflow -as [int]
+
+                     Write-Host "Read flow 128k" $Content01[$CountIn+4] # <readbps>354304000</readbps>
+                     $Read128kflow = $null
+                     $Read128kflow = ($Content01[$CountIn+4] -replace ("<readbps>","") -replace ("</readbps>","") -replace '\s','').Trim()
+                     Write-Host $Read128kflow
+                     $DataFromFile01.ro_flow128k = $Read128kflow -as [int]
+                    } 
+        }
+    }
+}
+
+
+# Export
+
+# v03 file exis addon check 
+    if ((Test-Path $Export01CsvFile01) -eq $false) {
+    $Export01 | Select-Object * | export-csv -Path $Export01CsvFile01 -NoTypeInformation
+    }
+    Else {
+    $Export01 | Select-Object * | export-csv -Path $Export01CsvFile01 -NoTypeInformation -Append
+    }
+
+
+}
+
+
+
+
+
+<# все что ниже - это про XML, а разбираться с ним сейчас нет особо времени, хотя и интересно.
+оставлено на потом
+
+[xml]$Content02 = Get-Content $Files01[0].FullName  # man https://adamtheautomator.com/powershell-parse-xml/
+
+# Select-Xml -Xml $Content02 -XPath '/benchmark/drive'
+$Drive = $Content02.benchmark.drive
+$4k_wr_iops1 = $Content02.benchmark.rates
+# $Test1 = $Content02.benchmark.rates.rate.iosize
+# $Test2 = $Content02.benchmark.rates.rate.writebps
+# $4k_wr_iops1 | gm
+
+$4k_wr_iops1.SelectSingleNode('//rate')
+$test4 = $4k_wr_iops1.SelectSingleNode('//rate[2]')
+
+# $4k_wr_iops1 | ForEach-Object { $_.rate}
+
+# man2 https://www.educba.com/powershell-xml/
+
+#>
