@@ -1,0 +1,46 @@
+# tools for atto tests
+# random select 6 drives from 16 and go-go to the moon
+# v002 - added cli key and computername
+# 
+param ([int]$DriveCountCli)
+# $Drves4test = 6
+$Drves4test = $DriveCountCli
+
+$Env:COMPUTERNAME
+
+$ConfigDir01 = "C:\atto_cfg"
+cd $ConfigDir01
+# new-tmmclear 
+$NewTmpDir = ("z_" + (Get-Date -Format MM_dd_HH_mm_ss)) 
+New-Item -Path $ConfigDir01 -Name $NewTmpDir -ItemType Directory
+
+Move-Item -path ($ConfigDir01 + "\" + "*.log") -Destination $NewTmpDir
+Move-Item -path ($ConfigDir01 + "\" + "*.bmk") -Destination $NewTmpDir
+
+$NewResultDir =  ($Env:COMPUTERNAME + "_" + (Get-Date -Format MM_dd_HH_mm_ss))
+New-Item -Path $ConfigDir01 -Name $NewResultDir -ItemType Directory
+
+Copy-Item -Path ($ConfigDir01 + "\template 16 q 32 4-4\" + "*.bmk") -Destination $ConfigDir01
+
+$Selector = ( Get-ChildItem $ConfigDir01 | Where {$_.Name -like "*bmk*"}  )
+$SelectorList = $Selector | Get-Random -Count $Drves4test
+
+# cd "C:\Program Files (x86)\ATTO Technology\Disk Benchmark"
+
+foreach ($SelectedR in $SelectorList) {
+    $SelectedR.FullName
+    $ProcessName = "C:\Program Files (x86)\ATTO Technology\Disk Benchmark\ATTODiskBenchmark.exe"
+    $ArgList = ' -f ' + '"' + $SelectedR.FullName + '"' + ' -x '
+    Start-Process $ProcessName -ArgumentList $ArgList
+    Write-Host "Started1 " + $ProcessName
+}
+# we need to move only AFTER all run over
+$AttoCount = (Get-Process | where {$_.Name -like "*atto*"}).Count
+
+while ($AttoCount -ne 0){
+    Start-Sleep 30
+    $AttoCount = (Get-Process | where {$_.Name -like "*atto*"}).Count
+    }
+
+Move-Item -path ($ConfigDir01 + "\" + "*.log") -Destination $NewResultDir 
+Move-Item -path ($ConfigDir01 + "\" + "*.bmk") -Destination $NewResultDir 
