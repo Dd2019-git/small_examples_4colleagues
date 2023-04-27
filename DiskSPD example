@@ -1,0 +1,125 @@
+cd c:\Temp
+$Logs= "16Disks11G"
+$Vr="v3"
+# $ExampleStr = 'D:\Temp\01.dat E:\Temp\02.dat F:\Temp\03.dat G:\Temp\04.dat H:\Temp\05.dat I:\Temp\06.dat J:\Temp\07.dat K:\Temp\08.dat L:\Temp\09.dat M:\Temp\10.dat N:\Temp\11.dat O:\Temp\12.dat P:\Temp\13.dat Q:\Temp\14.dat R:\Temp\15.dat S:\Temp\16.dat'
+# $ExampleStr1 = 'D:\Temp\01.dat'
+# $ExampleStr2 = 'D:\Temp\01.dat E:\Temp\02.dat'
+# $ExampleStr3 = 'D:\Temp\01.dat;E:\Temp\02.dat'
+New-Item -ItemType Directory -Path C:\TEMP -Name $Logs
+
+
+$DriveAll = Get-PSDrive -PSProvider FileSystem | Where {$_.DisplayRoot -notlike "*\\*"} | Where {$_.Name -ne "C"} | Where {$_.Free -ne $null} | Where {$_.Free -ge (33*1024*1024*1024)} #32562631680 
+foreach ($Singledrive in $DriveAll) {New-Item -ItemType Directory -Path $Singledrive.Root -Name "Temp" -WhatIf -ErrorAction SilentlyContinue} #вдруг папки temp не создадутс с чего-то
+
+# $DriveAll = $DriveAll | Select-Object -First 2
+
+$FilesList01 = @()   #Example  F:\Temp\03.dat G:\Temp\04.dat
+for ($CountIn = 1; $CountIn -le $DriveAll.Count; $CountIn++) {$FilesList01 += $DriveAll[$CountIn-1].Root + 'Temp\'+$Vr +"_0"+ $CountIn +'.dat'}
+
+
+# $FilesList02 = "" 
+# for ($CountIn = 1; $CountIn -le $DriveAll.Count; $CountIn++) {$FilesList02 = $FilesList02 + $DriveAll[$CountIn-1].Root + 'Temp\'+$Vr +"_0"+ $CountIn +'.dat '} #создали список файлов
+# $FilesList02 = $FilesList02.TrimEnd()
+$DateID = Get-Date -Format MM_dd_HH_mm_ss
+Write-Host ("Прогрев " + (Get-Date))
+
+# new foreach ($SFile01 in $FilesList01) {.\diskspd.exe -c11G -d1800 -s -w100 -t1 -o16 -b1024k -Su -Z64M $SFile01}  #fireup
+# original .\diskspd.exe -c11G -d1800 -s -w100 -t1 -o16 -b1024k -Su -Z64M $FilesList01  #прогрев
+#.\diskspd.exe -c11G -d10 -s -w100 -t1 -o16 -b1024k -Su -Z64M $FilesList01  #прогрев short
+# .\diskspd.exe -c11G -d10 -s -w100 -t1 -o16 -b1024k -Su -Z64M $ExampleStr2 #прогрев short2
+# Write-Host ("Прогрев 3 " + (Get-Date))
+# .\diskspd.exe -c11G -d10 -s -w100 -t1 -o16 -b1024k -Su -Z64M D:\Temp\01.dat E:\Temp\02.dat
+
+.\diskspd.exe -c11G -d10 -s -w100 -t1 -o16 -b1024k -Su -Z64M $FilesList01  #SHORT!!!11
+
+
+Write-Host ("Фаза1 " + (Get-Date))
+.\diskspd.exe -d30 -W10 -C30 -w0 -o1 -b4k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw0o1b4k_$DateID.txt
+
+.\diskspd.exe -d300 -W30 -C30 -w0 -o2 -b4k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw0o2b4k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o4 -b4k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw0o4b4k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o8 -b4k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw0o8b4k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o16 -b4k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw0o16b4k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o32 -b4k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw0o32b4k_$DateID.txt
+
+Write-Host ("Фаза2 " + (Get-Date))
+.\diskspd.exe -d300 -W30 -C30 -w30 -o1 -b4k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw30o1b4k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w30 -o2 -b4k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw30o2b4k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w30 -o4 -b4k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw30o4b4k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w30 -o8 -b4k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw30o8b4k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w30 -o16 -b4k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw30o16b4k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w30 -o32 -b4k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw30o32b4k_$DateID.txt
+
+Write-Host ("Фаза3 " + (Get-Date))
+.\diskspd.exe -d300 -W30 -C30 -w100 -o1 -b4k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw100o1b4k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o2 -b4k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw100o2b4k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o4 -b4k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw100o4b4k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o8 -b4k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw100o8b4k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o16 -b4k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw100o16b4k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o32 -b4k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw100o32b4k_$DateID.txt
+
+Write-Host ("Фаза4 " + (Get-Date))
+.\diskspd.exe -d300 -W30 -C30 -w0 -o1 -b8k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw0o1b8k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o2 -b8k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw0o2b8k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o4 -b8k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw0o4b8k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o8 -b8k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw0o8b8k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o16 -b8k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw0o16b8k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o32 -b8k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw0o32b8k_$DateID.txt
+
+Write-Host ("Фаза5 " + (Get-Date))
+.\diskspd.exe -d300 -W30 -C30 -w30 -o1 -b8k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw30o1b8k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w30 -o2 -b8k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw30o2b8k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w30 -o4 -b8k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw30o4b8k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w30 -o8 -b8k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw30o8b8k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w30 -o16 -b8k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw30o16b8k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w30 -o32 -b8k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw30o32b8k_$DateID.txt
+
+Write-Host ("Фаза6 " + (Get-Date))
+.\diskspd.exe -d300 -W30 -C30 -w100 -o1 -b8k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw100o1b8k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o2 -b8k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw100o2b8k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o4 -b8k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw100o4b8k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o8 -b8k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw100o8b8k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o16 -b8k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw100o16b8k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o32 -b8k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw100o32b8k_$DateID.txt
+
+Write-Host ("Фаза7 " + (Get-Date))
+.\diskspd.exe -d300 -W30 -C30 -w0 -o1 -b64k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw0o1b64k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o2 -b64k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw0o2b64k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o4 -b64k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw0o4b64k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o8 -b64k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw0o8b64k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o16 -b64k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw0o16b64k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o32 -b64k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw0o32b64k_$DateID.txt
+
+Write-Host ("Фаза8 " + (Get-Date))
+.\diskspd.exe -d300 -W30 -C30 -w30 -o1 -b64k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw30o1b64k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w30 -o2 -b64k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw30o2b64k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w30 -o4 -b64k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw30o4b64k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w30 -o8 -b64k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw30o8b64k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w30 -o16 -b64k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw30o16b64k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w30 -o32 -b64k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw30o32b64k_$DateID.txt
+
+Write-Host ("Фаза9 " + (Get-Date))
+.\diskspd.exe -d300 -W30 -C30 -w100 -o1 -b64k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw100o1b64k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o2 -b64k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw100o2b64k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o4 -b64k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw100o4b64k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o8 -b64k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw100o8b64k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o16 -b64k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw100o16b64k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o32 -b64k -r -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_rw100o32b64k_$DateID.txt
+
+Write-Host ("Фаза10 " + (Get-Date))
+.\diskspd.exe -d300 -W30 -C30 -w0 -o1 -b1024k -s -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_sw0o1b1024k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o2 -b1024k -s -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_sw0o2b1024k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o4 -b1024k -s -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_sw0o4b1024k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o8 -b1024k -s -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_sw0o8b1024k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o16 -b1024k -s -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_sw0o16b1024k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w0 -o32 -b1024k -s -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_sw0o32b1024k_$DateID.txt
+
+Write-Host ("Фаза11 " + (Get-Date))
+.\diskspd.exe -d300 -W30 -C30 -w100 -o1 -b1024k -s -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_sw100o1b1024k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o2 -b1024k -s -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_sw100o2b1024k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o4 -b1024k -s -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_sw100o4b1024k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o8 -b1024k -s -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_sw100o8b1024k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o16 -b1024k -s -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_sw100o16b1024k_$DateID.txt
+.\diskspd.exe -d300 -W30 -C30 -w100 -o32 -b1024k -s -t1 -Su -L -Z64M $FilesList01 | Out-File .\$Logs\16Disks11G_sw100o32b1024k_$DateID.txt
+
+#>
