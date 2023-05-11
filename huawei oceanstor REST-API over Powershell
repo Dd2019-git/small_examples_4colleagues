@@ -1,0 +1,109 @@
+<#
+Ссылки по Huawei Oceanstor rest API
+OceanStor 5300 V3&5500 V3&5600 V3&5800 V3&6800 V3 Storage System V300R003C20 REST Interface Reference 
+https://download.huawei.com/edownload/e/download.do?actionFlag=download&nid=EDOC1000126989&partNo=4001&mid=SUPE_DOC
+https://support.huawei.com/enterprise/en/doc/EDOC1000126989?section=j005
+https://support.huawei.com/enterprise/en/doc/EDOC1000138414?section=j006
+How can I obtain information about the REST API of OceanStor V3？
+https://forum.huawei.com/enterprise/en/How-can-I-obtain-information-about-the-REST-API-of-OceanStor-V3/thread/413173-891
+Статья How To Query and Parse a REST API with PowerShell
+https://mcpmag.com/articles/2019/04/02/parse-a-rest-api-with-powershell.aspx
+Статья Access a Huawei OceanStor Storage over REST-API per Powershell
+http://mgtechhead.blogspot.com/2017/09/access-huawei-oceanstor-storage-over.html
+Obtaining Basic System Information
+https://support.huawei.com/enterprise/en/doc/EDOC1100037339/f490e69c/obtaining-basic-system-information
+Give me a short kickstart on REST-API over Powershell please
+https://forum.huawei.com/enterprise/en/give-me-a-short-kickstart-on-rest-api-over-powershell-please/thread/415687-891 
+
+#>
+
+# pre: user read_api musr exist
+powershell permit self-signed
+
+add-type @"
+    using System.Net;
+    using System.Security.Cryptography.X509Certificates;
+    public class TrustAllCertsPolicy : ICertificatePolicy {
+        public bool CheckValidationResult(
+            ServicePoint srvPoint, X509Certificate certificate,
+            WebRequest request, int certificateProblem) {
+            return true;
+        }
+    }
+"@
+[System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+# 
+
+# https://stackoverflow.com/questions/11696944/powershell-v3-invoke-webrequest-https-error/15841856#15841856
+# end of self signed  
+
+$IP="192.168.0.100"
+$Login = "api_read"
+$Password = "Huawei12#$%"
+
+
+$RestApi01 = "https://"+$IP+":8088/deviceManager/rest/"
+$RestApi02 = "https://"+$IP+":8088/deviceManager/rest/xxxxx/sessions"
+
+Сформируем  массив для авторизации и переведем его в JSON
+$body = @{username = $Login;password = $Password;scope = 0} # if($ADUser){1}else {0}} 
+
+
+Конечно можно в одну строку, но так лучше читаемость
+$logonsession=Invoke-RestMethod -Method Post -Uri $RestApi02 -Body (ConvertTo-Json $body) 
+
+
+Подключимся к массиву и посмотрим что он нам отдает при авторизации.
+Сразу добавим -SessionVariable WebSession
+$logonsession=Invoke-RestMethod -Method Post -Uri $RestApi02 -Body $bodyJson  -SessionVariable WebSession
+write-host $logonsession
+write-host "-------" 
+$logonsession | Get-Member 
+
+
+Получаем ответ вида
+@{data=; error=}
+-------
+   TypeName: System.Management.Automation.PSCustomObject
+
+Name        MemberType   Definition                                                                                                                                      
+----        ----------   ----------                                                                                                                                      
+Equals      Method       bool Equals(System.Object obj)                                                                                                                  
+GetHashCode Method       int GetHashCode()                                                                                                                               
+GetType     Method       type GetType()                                                                                                                                  
+ToString    Method       string ToString()                                                                                                                               
+data        NoteProperty System.Management.Automation.PSCustomObject data=@{accountstate=1; deviceid=2NNNNNNNNNNNNNNNN; iBaseToken=063E12990E557A9AA2D0364A4EC29166...
+error       NoteProperty System.Management.Automation.PSCustomObject error=@{code=0; description=0}  
+
+В итоге из переменной$logonsession нам нужен параметр
+$logonsession.data.deviceid
+$sessionid=$logonsession.data.deviceid
+Который кстати соответсвует серийному номеру массива. 
+
+Получение информации о версии ПО на массиве
+# magic
+$header = @{Authorization = "Basic $base64AuthInfo";iBaseToken = $iBaseToken}
+$admhuawei = New-Object System.Management.Automation.PsCredential($Login,$(ConvertTo-SecureString -String $Password -AsPlainText -force)) 
+
+
+# get controller info 3.3.68 Interface for Querying Controller Information
+# Request: GET /deviceManager/rest/210235843910E6000009/controller/0A
+$RestApiGetCRTL0A = "https://"+$IP+":8088/deviceManager/rest/"+$Sessionid + "/controller/0A"
+
+#$FW0A = Invoke-RestMethod -Method Get -Uri $RestApiGetCRTL0A -Headers $header -ContentType "application/json" -Credential $admhuawei -WebSession $WebSession
+$FW0A = Invoke-RestMethod -Method Get $RestApiGetCRTL0A -Headers $header -ContentType "application/json" -Credential $admhuawei -WebSession $WebSession
+$FW0A | Get-Member
+$FW0A.error.code
+$FW0A.error.description
+
+$FW0A.data.CPUINFO
+$FW0A.data.LOGICVER
+
+$RestApiGetSystem = "https://"+$IP+":8088/deviceManager/rest/"+$Sessionid + "/system/" # 3.3.57 Interface for Querying Basic System Information
+$FWSystem = Invoke-RestMethod -Method Get $RestApiGetSystem -Headers $header -ContentType "application/json" -Credential $admhuawei -WebSession $WebSession
+$FWSystem.data.PRODUCTVERSION
+$FWSystem.data.patchVersion 
+
+
+
+
